@@ -27,7 +27,7 @@ def main(request):
 
     try:
         print("⏳ Starting secret retrieval...")
-        # Get secret names from env
+        # Get secret names from env.
         db_host = get_secret(os.environ["DB_HOST"]) 
         db_name = get_secret(os.environ["DB_NAME"])
         db_user = get_secret(os.environ["DB_USER"])
