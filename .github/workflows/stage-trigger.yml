@@ -1,0 +1,13 @@
+name: Stage Deployment
+
+on:
+    push:
+        branches:
+            - stage
+
+jobs:
+    build-trigger:
+        uses: ./.github/workflows/deploy.yml
+        with:
+            env: stage
+        secrets: inherit

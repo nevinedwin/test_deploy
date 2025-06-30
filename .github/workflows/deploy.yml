@@ -1,0 +1,78 @@
+name: Build and Deploy
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+
+jobs:
+  build: 
+    runs-on: ubuntu-latest
+    environment: ${{inputs.env}}
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_SA: ${{ vars.GCP_SA }}
+      GCP_WIP: ${{ vars.GCP_WIP }}
+      GCP_QUESTIONS_SA: ${{ vars.GCP_QUESTIONS_SA }}
+      GCP_CRF_NAME: hqb-decipher-questions
+      GCP_PUB_SUB_TOPIC: hpoll-quest-decipher-questions
+      VPC_CONNECTOR: ${{ vars.VPC_CONNECTOR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 'Authenticate with Google Cloud'
+        id: google-auth
+        uses: google-github-actions/auth@v2
+        with:
+            workload_identity_provider: ${{ env.GCP_WIP }}
+            service_account: ${{ env.GCP_SA }}
+            create_credentials_file: true
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+            version: '>= 363.0.0'
+
+      - name: Deploy to Cloud Function
+        env:
+            GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.google-auth.outputs.credentials_file }}
+            GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+        working-directory: hqb-ppt-export
+        run: |
+          gcloud functions deploy ${{ env.GCP_CRF_NAME }}\
+              --gen2 \
+              --max-instances=4 \
+              --region us-central1 \
+              --project ${{ env.GCP_PROJECT_ID }} \
+              --runtime python311 \
+              --source . \
+              --entry-point main \
+              --trigger-topic=${{ env.GCP_PUB_SUB_TOPIC }} \
+              --cpu=6000m \
+              --memory=6144MB \
+              --concurrency=200 \
+              --run-service-account=${{ env.GCP_QUESTIONS_SA }} \
+              --allow-unauthenticated \
+              --vpc-connector=${{ env.VPC_CONNECTOR }} \
+              --ingress-settings=internal-and-gclb \
+              --egress-settings=all \
+              --set-env-vars=\
+                DB_HOST=${{ vars.DB_HOST }},\
+                DB_NAME=${{ vars.DB_NAME }},\
+                DB_USER=${{ vars.DB_USER }},\
+                DB_PASSWORD=${{ vars.DB_PASSWORD }},\
+                DB_CLIENT_CERT=${{ vars.DB_CLIENT_CERT }},\
+                DB_CLIENT_KEY=${{ vars.DB_CLIENT_KEY }},\
+                DB_SERVER_CA=${{ vars.DB_SERVER_CA }},\
+                REDIS_HOST=${{ vars.REDIS_HOST }},\
+                REDIS_PORT=${{ vars.REDIS_PORT }},\
+                REDIS_CERT=${{ vars.REDIS_CERT }},\
+                REDIS_PASSWORD=${{ vars.REDIS_PASSWORD }}
