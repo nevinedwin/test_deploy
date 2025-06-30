@@ -18,10 +18,10 @@ jobs:
     env:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCP_SA: ${{ vars.GCP_SA }}
-      GCP_WIP: ${{ vars.GCP_WIP }}
+      # GCP_WIP: ${{ vars.GCP_WIP }}
       GCP_QUESTIONS_SA: ${{ vars.GCP_QUESTIONS_SA }}
-      GCP_CRF_NAME: hqb-decipher-questions
-      GCP_PUB_SUB_TOPIC: hpoll-quest-decipher-questions
+      GCP_CRF_NAME: test
+      GCP_PUB_SUB_TOPIC: test-topic
       VPC_CONNECTOR: ${{ vars.VPC_CONNECTOR }}
 
     steps:
@@ -32,7 +32,7 @@ jobs:
         id: google-auth
         uses: google-github-actions/auth@v2
         with:
-            workload_identity_provider: ${{ env.GCP_WIP }}
+            # workload_identity_provider: ${{ env.GCP_WIP }}
             service_account: ${{ env.GCP_SA }}
             create_credentials_file: true
 
@@ -45,7 +45,7 @@ jobs:
         env:
             GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.google-auth.outputs.credentials_file }}
             GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
-        working-directory: hqb-ppt-export
+        working-directory: test-path
         run: |
           gcloud functions deploy ${{ env.GCP_CRF_NAME }}\
               --gen2 \
